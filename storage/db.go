@@ -7,7 +7,15 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type ContactDB interface {
+type UserStorage interface {
+	Login(context.Context, models.Credentials) (models.User, error)
+	FindAll(context.Context) ([]models.User, error)
+	FindByUsername(context.Context, string) (models.User, error)
+	Insert(context.Context, models.User) error
+	Delete(context.Context, models.User) error
+}
+
+type ContactStorage interface {
 	NewObjectId() bson.ObjectId
 	FindAll(context.Context) ([]models.Contact, error)
 	FindById(context.Context, string) (models.Contact, error)
@@ -17,8 +25,13 @@ type ContactDB interface {
 	Connect()
 }
 
-var DB ContactDB
+var userStorage UserStorage
+var contactStorage ContactStorage
 
-func SetContactDatabase(db ContactDB) {
-	DB = db
+func SetGlobalUserStorage(u UserStorage) {
+	userStorage = u
+}
+
+func SetGlobalContactStorage(c ContactStorage) {
+	contactStorage = c
 }

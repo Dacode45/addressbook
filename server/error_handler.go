@@ -14,4 +14,6 @@ func (e ErrorHandler) Serve(err error) http.HandlerFunc {
 var (
 	StatusBadRequest          = ErrorHandler(http.StatusBadRequest)
 	StatusInternalServerError = ErrorHandler(http.StatusInternalServerError)
+	StatusNotFound            = ErrorHandler(http.StatusNotFound)
+	StatusUnauthorized        = ErrorHandler(http.StatusUnauthorized)
 )

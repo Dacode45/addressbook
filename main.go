@@ -29,6 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to connect to mongo: %s", err)
 	}
+	defer session.Close()
 
 	hash := crypto.Hash{}
 	uStorage := storage.NewMongoUserStorage(session.Copy(), dbName, userCollectionName, &hash)

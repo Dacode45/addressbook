@@ -89,7 +89,7 @@ func should_retrieve_contacts(t *testing.T) {
 	newContact.FirstName = "test"
 	newContact.LastName = "user"
 	newContactStr, _ = json.Marshal(newContact)
-	res = testEndpoint("POST", fmt.Sprintf("/%s", newContact.ID), bytes.NewBuffer(newContactStr), cRouter, token)
+	res = testEndpoint("PUT", fmt.Sprintf("/%s", newContact.ID), bytes.NewBuffer(newContactStr), cRouter, token)
 	assert.Equal(t, http.StatusOK, res.Code, "OK response is expected")
 
 	err = json.NewDecoder(res.Body).Decode(&parsedContact)

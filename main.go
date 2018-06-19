@@ -1,3 +1,4 @@
+/// Package addressbook implements an address book for multiple users with JWT token
 package main
 
 import (

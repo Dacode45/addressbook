@@ -22,13 +22,13 @@ func NewContactRouter(u storage.UserStorage, config ServerConfig, router *mux.Ro
 	jwtCoder := NewJWTCoder(config.JWTSecret)
 	cr := contactRouter{u, jwtCoder}
 
-	router.HandleFunc("", LoggedInMiddleware(jwtCoder, u, cr.AllContactsEndPoint)).Methods("GET")
+	router.HandleFunc("/", LoggedInMiddleware(jwtCoder, u, cr.AllContactsEndPoint)).Methods("GET")
 	// export import csv
 	router.HandleFunc("/export", LoggedInMiddleware(jwtCoder, u, cr.ExportAllContactsEndpoint)).Methods("GET")
 	router.HandleFunc("/{id}", LoggedInMiddleware(jwtCoder, u, cr.FindContactEndPoint)).Methods("GET")
-	router.HandleFunc("", LoggedInMiddleware(jwtCoder, u, cr.CreateContactEndPoint)).Methods("POST")
+	router.HandleFunc("/", LoggedInMiddleware(jwtCoder, u, cr.CreateContactEndPoint)).Methods("POST")
 	router.HandleFunc("/import", LoggedInMiddleware(jwtCoder, u, cr.ImportContactsEndPoint)).Methods("POST")
-	router.HandleFunc("/{id}", LoggedInMiddleware(jwtCoder, u, cr.UpdateContactEndPoint)).Methods("POST")
+	router.HandleFunc("/{id}", LoggedInMiddleware(jwtCoder, u, cr.UpdateContactEndPoint)).Methods("PUT")
 	router.HandleFunc("/{id}", LoggedInMiddleware(jwtCoder, u, cr.DeleteContactEndPoint)).Methods("DELETE")
 	return router
 }

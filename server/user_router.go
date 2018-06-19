@@ -21,7 +21,7 @@ func NewUserRouter(u storage.UserStorage, config ServerConfig, router *mux.Route
 	jwtCoder := NewJWTCoder(config.JWTSecret)
 	userRouter := userRouter{u, jwtCoder}
 
-	router.HandleFunc("", userRouter.CreateUserHandler).Methods("POST")
+	router.HandleFunc("/", userRouter.CreateUserHandler).Methods("POST")
 	router.HandleFunc("/login", userRouter.LoginHandler).Methods("POST")
 	router.HandleFunc("/me", LoggedInMiddleware(jwtCoder, u, userRouter.GetLoggedInUser)).Methods("GET")
 	router.HandleFunc("/{username}", userRouter.GetUserHandler).Methods("GET")

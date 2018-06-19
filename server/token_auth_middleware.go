@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-)
 
-var CREDENTIALS_KEY = "credentials"
+	"github.com/Dacode45/addressbook/common"
+)
 
 func (coder *JWTCoder) TokenAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +26,7 @@ func (coder *JWTCoder) TokenAuthMiddleware(next http.HandlerFunc) http.HandlerFu
 			StatusInternalServerError.Serve(err)(w, r)
 			return
 		}
-		ctx := context.WithValue(r.Context(), CREDENTIALS_KEY, creds)
+		ctx := context.WithValue(r.Context(), common.ContextCredentialsKey, creds)
 		r = r.WithContext(ctx)
 		next(w, r)
 	}

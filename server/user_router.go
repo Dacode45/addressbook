@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Dacode45/addressbook/common"
 	"github.com/Dacode45/addressbook/models"
 	"github.com/Dacode45/addressbook/storage"
 	"github.com/gorilla/mux"
@@ -57,7 +58,7 @@ func (ur *userRouter) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func (ur *userRouter) getLoggedInUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	creds, ok := ctx.Value(CREDENTIALS_KEY).(*models.Credentials)
+	creds, ok := ctx.Value(common.ContextCredentialsKey).(*models.Credentials)
 	if !ok || creds == nil {
 		StatusUnauthorized.Serve(fmt.Errorf("no jwt passed"))(w, r)
 		return

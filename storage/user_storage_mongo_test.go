@@ -21,8 +21,9 @@ const (
 )
 
 func Test_MongoUserStorage(t *testing.T) {
-	t.Run("Inser User", should_insert_user)
-	t.Run("Query checks", should_query_users)
+	t.Run("Insert user", should_insert_user)
+	t.Run("Query users", should_query_users)
+	t.Run("Query contacts", should_query_contacts)
 }
 
 func should_insert_user(t *testing.T) {
@@ -80,21 +81,91 @@ func should_query_users(t *testing.T) {
 	var findAll []models.User
 	findAll, err = uStorage.FindAll(ctx)
 	t.Logf("%+v", findAll)
-	assert.NoError(t, err, "Failed to find all users")
+	assert.NoError(t, err, "Failed to find a users")
 	assert.Equal(t, len(findAll), numFake, "Incorrect number of users")
 
 	// Find by username
-	var byUsername models.User
+	var byUsername *models.User
 	byUsername, err = uStorage.FindByUsername(ctx, findAll[0].Username)
 	assert.NoError(t, err, "Failed to find a user")
 	assert.Equal(t, byUsername.Username, findAll[0].Username, "Incorrect user fetched")
 
 	// Deletion
-	err = uStorage.Delete(ctx, findAll[0])
+	err = uStorage.Delete(ctx, findAll[0].Username)
 	assert.NoError(t, err, "Failed to delete user")
 	byUsername, err = uStorage.FindByUsername(ctx, findAll[0].Username)
 	assert.Error(t, err, "Failed to delete user")
+}
 
+func should_query_contacts(t *testing.T) {
+	session, err := storage.NewMongoSession(mongoUrl)
+	if err != nil {
+		log.Fatalf("Unable to connect to mongo: %s", err)
+	}
+	defer func() {
+		session.DropDatabase(dbName)
+		session.Close()
+	}()
+
+	mockHash := mock.Hash{}
+	uStorage := storage.NewMongoUserStorage(session.Copy(), dbName, userCollectionName, &mockHash)
+
+	numFake := 10
+
+	fakeUser := fakeUsers(1)[0]
+	fakeContacts := fakeContacts(numFake)
+
+	ctx := context.Background()
+
+	assert.NoError(t, uStorage.Insert(ctx, fakeUser), "Unable to create user")
+	for i, contact := range fakeContacts {
+		c, e := uStorage.CreateContact(ctx, fakeUser.Username, contact)
+		assert.NoError(t, e, "Failed to insert Contact")
+		fakeContacts[i] = *c
+	}
+	t.Logf("fake contacts: %+v", fakeContacts)
+
+	// Check that we can find all
+	var allContacts []models.Contact
+	allContacts, err = uStorage.FindAllContacts(ctx, fakeUser.Username)
+	assert.NoError(t, err, "Failed to fetch all contacts")
+	assert.Equal(t, numFake, len(allContacts))
+
+	// Check that we can find by id
+	var fakeContact *models.Contact
+	fakeContact, err = uStorage.FindContactById(ctx, fakeUser.Username, fakeContacts[0].ID)
+	assert.NoError(t, err, "Failed to fetch contact")
+	assert.Equal(t, *fakeContact, fakeContacts[0], "Incorrect contact fetched")
+
+	// check that we can update
+	t.Logf("fakeContact: %+v", fakeContact)
+	fakeContact.FirstName = "test"
+	fakeContact.LastName = "user"
+	err = uStorage.UpdateContact(ctx, fakeUser.Username, *fakeContact)
+	assert.NoError(t, err, "Failed to update")
+	var update *models.Contact
+	update, err = uStorage.FindContactById(ctx, fakeUser.Username, fakeContact.ID)
+	assert.NoError(t, err, "Failed to find contact")
+	assert.Equal(t, fakeContact, update, "failed to update contact")
+
+	// check that we can delete
+	err = uStorage.DeleteContact(ctx, fakeUser.Username, fakeContact.ID)
+	assert.NoError(t, err, "Failed to delete")
+	fakeContact, err = uStorage.FindContactById(ctx, fakeUser.UserID, fakeContact.ID)
+	assert.Error(t, err, "failed to delete contact")
+}
+
+func fakeContacts(count int) []models.Contact {
+	contacts := make([]models.Contact, count)
+	for i := 0; i < count; i++ {
+		contacts[i] = models.Contact{
+			FirstName: fake.FirstName(),
+			LastName:  fake.LastName(),
+			Email:     fake.EmailAddress(),
+			Phone:     fake.Phone(),
+		}
+	}
+	return contacts
 }
 
 func fakeUsers(count int) []models.User {

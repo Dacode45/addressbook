@@ -5,9 +5,11 @@ import (
 	"net/http"
 )
 
-type JsonHandler int
+// JsonHandler serves responses as json
+type JSONHandler int
 
-func (j JsonHandler) Serve(payload interface{}) http.HandlerFunc {
+// Serve payload as json
+func (j JSONHandler) Serve(payload interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		msg, err := json.Marshal(payload)
 		if err != nil {

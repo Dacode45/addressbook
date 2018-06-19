@@ -7,8 +7,10 @@ import (
 	"github.com/gocarina/gocsv"
 )
 
+// CSVHandler serves responses as csv files. Status code can be set at compile time
 type CSVHandler int
 
+// Serve serves a payload as the filename. It sets Content-Type and Content-Disposition so that files get downloaded
 func (c CSVHandler) Serve(filename string, payload interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		msg, err := gocsv.MarshalString(payload)

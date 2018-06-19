@@ -10,11 +10,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Server sets up the api, and serves over http
 type Server struct {
 	config ServerConfig
 	router *mux.Router
 }
 
+// NewServer creates a new Server given a storage backend and configuration
 func NewServer(u storage.UserStorage, config ServerConfig) *Server {
 	s := Server{router: mux.NewRouter(), config: config}
 	NewUserRouter(u, config, s.newSubrouter("/api/v1/users"))
@@ -22,6 +24,7 @@ func NewServer(u storage.UserStorage, config ServerConfig) *Server {
 	return &s
 }
 
+// Start serves the server on port 8080
 func (s *Server) Start() {
 	log.Println("Listen on port 8080")
 	if err := http.ListenAndServe(":8080", handlers.LoggingHandler(os.Stdout, s.router)); err != nil {

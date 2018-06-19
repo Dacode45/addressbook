@@ -6,6 +6,7 @@ import (
 	"github.com/Dacode45/addressbook/models"
 )
 
+// UserStorage acts as a generic storage interface. In this app we use mongodb, but firebase and other methods were considered.
 type UserStorage interface {
 	Login(context.Context, models.Credentials) (*models.User, error)
 	FindAll(context.Context) ([]models.User, error)

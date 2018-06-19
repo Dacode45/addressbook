@@ -8,10 +8,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Hash uses bcrypt for encryptions
 type Hash struct{}
 
+// store hashes with their salt by splitting with the following deliminator
 var delim = "||"
 
+// Generate generates a hash of a string, and appends the salt used
 func (c *Hash) Generate(s string) (string, error) {
 	salt := uuid.New().String()
 	saltedBytes := []byte(s + salt)
@@ -25,6 +28,7 @@ func (c *Hash) Generate(s string) (string, error) {
 	return hash + delim + salt, nil
 }
 
+// Compare checks a hash and a string. hash must have the salt appended with the deliminator
 func (c *Hash) Compare(hash string, s string) error {
 	parts := strings.Split(hash, delim)
 	if len(parts) != 2 {

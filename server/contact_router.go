@@ -17,22 +17,24 @@ type contactRouter struct {
 	jwtCoder    *JWTCoder
 }
 
+// NewContactRouter generates a router for handling the contacts api. Requires access to our user storage
 func NewContactRouter(u storage.UserStorage, config ServerConfig, router *mux.Router) *mux.Router {
 	jwtCoder := NewJWTCoder(config.JWTSecret)
 	cr := contactRouter{u, jwtCoder}
 
-	router.HandleFunc("/", LoggedInMiddleware(jwtCoder, u, cr.allContactsEndPoint)).Methods("GET")
+	router.HandleFunc("/", LoggedInMiddleware(jwtCoder, u, cr.AllContactsEndPoint)).Methods("GET")
 	// export import csv
-	router.HandleFunc("/export", LoggedInMiddleware(jwtCoder, u, cr.exportAllContactsEndpoint)).Methods("GET")
-	router.HandleFunc("/{id}", LoggedInMiddleware(jwtCoder, u, cr.findContactEndPoint)).Methods("GET")
-	router.HandleFunc("/", LoggedInMiddleware(jwtCoder, u, cr.createContactEndPoint)).Methods("POST")
-	router.HandleFunc("/import", LoggedInMiddleware(jwtCoder, u, cr.importContactsEndPoint)).Methods("POST")
-	router.HandleFunc("/{id}", LoggedInMiddleware(jwtCoder, u, cr.updateContactEndPoint)).Methods("POST")
-	router.HandleFunc("/{id}", LoggedInMiddleware(jwtCoder, u, cr.deleteContactEndPoint)).Methods("DELETE")
+	router.HandleFunc("/export", LoggedInMiddleware(jwtCoder, u, cr.ExportAllContactsEndpoint)).Methods("GET")
+	router.HandleFunc("/{id}", LoggedInMiddleware(jwtCoder, u, cr.FindContactEndPoint)).Methods("GET")
+	router.HandleFunc("/", LoggedInMiddleware(jwtCoder, u, cr.CreateContactEndPoint)).Methods("POST")
+	router.HandleFunc("/import", LoggedInMiddleware(jwtCoder, u, cr.ImportContactsEndPoint)).Methods("POST")
+	router.HandleFunc("/{id}", LoggedInMiddleware(jwtCoder, u, cr.UpdateContactEndPoint)).Methods("POST")
+	router.HandleFunc("/{id}", LoggedInMiddleware(jwtCoder, u, cr.DeleteContactEndPoint)).Methods("DELETE")
 	return router
 }
 
-func (cr *contactRouter) exportAllContactsEndpoint(w http.ResponseWriter, r *http.Request) {
+// ExportAllContactsEndpoints exports all user contacts as csv. Limits to 1000000 byte body
+func (cr *contactRouter) ExportAllContactsEndpoint(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user, ok := ctx.Value(ContextUserKey).(*models.User)
 	if !ok || user == nil {
@@ -48,7 +50,8 @@ func (cr *contactRouter) exportAllContactsEndpoint(w http.ResponseWriter, r *htt
 	StatusOKCSV.Serve("contacts.csv", contacts)(w, r)
 }
 
-func (cr *contactRouter) allContactsEndPoint(w http.ResponseWriter, r *http.Request) {
+// AllContactsEndPoint retrieves all user contacts as json
+func (cr *contactRouter) AllContactsEndPoint(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user, ok := ctx.Value(ContextUserKey).(*models.User)
 	if !ok || user == nil {
@@ -64,7 +67,8 @@ func (cr *contactRouter) allContactsEndPoint(w http.ResponseWriter, r *http.Requ
 	StatusOK.Serve(contacts)(w, r)
 }
 
-func (cr *contactRouter) findContactEndPoint(w http.ResponseWriter, r *http.Request) {
+// FindContactEndPoint searches for a given contact
+func (cr *contactRouter) FindContactEndPoint(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	ctx := r.Context()
 	user, ok := ctx.Value(ContextUserKey).(*models.User)
@@ -81,7 +85,8 @@ func (cr *contactRouter) findContactEndPoint(w http.ResponseWriter, r *http.Requ
 	StatusOK.Serve(contact)(w, r)
 }
 
-func (cr *contactRouter) createContactEndPoint(w http.ResponseWriter, r *http.Request) {
+// CreateContactEndPoint creates a given contact from a json body
+func (cr *contactRouter) CreateContactEndPoint(w http.ResponseWriter, r *http.Request) {
 	contact, err := decodeContact(r)
 	if err != nil {
 		StatusBadRequest.Serve(err)(w, r)
@@ -104,7 +109,9 @@ func (cr *contactRouter) createContactEndPoint(w http.ResponseWriter, r *http.Re
 	StatusOK.Serve(newContact)(w, r)
 }
 
-func (cr *contactRouter) importContactsEndPoint(w http.ResponseWriter, r *http.Request) {
+// ImportContactsEndPoint imports a csv file for contacts
+func (cr *contactRouter) ImportContactsEndPoint(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1000000)
 	contacts, err := decodeContacts(r)
 	if err != nil {
 		StatusBadRequest.Serve(err)(w, r)
@@ -130,7 +137,8 @@ func (cr *contactRouter) importContactsEndPoint(w http.ResponseWriter, r *http.R
 	StatusOK.Serve(newContacts)(w, r)
 }
 
-func (cr *contactRouter) updateContactEndPoint(w http.ResponseWriter, r *http.Request) {
+// UpdateContactEndPoint updates the fields of a given contact
+func (cr *contactRouter) UpdateContactEndPoint(w http.ResponseWriter, r *http.Request) {
 	contact, err := decodeContact(r)
 	if err != nil {
 		StatusBadRequest.Serve(err)(w, r)
@@ -152,7 +160,8 @@ func (cr *contactRouter) updateContactEndPoint(w http.ResponseWriter, r *http.Re
 	StatusOK.Serve(contact)(w, r)
 }
 
-func (cr *contactRouter) deleteContactEndPoint(w http.ResponseWriter, r *http.Request) {
+// DelecteContactEndPoint removes a contact
+func (cr *contactRouter) DeleteContactEndPoint(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	ctx := r.Context()
 	user, ok := ctx.Value(ContextUserKey).(*models.User)
@@ -169,6 +178,7 @@ func (cr *contactRouter) deleteContactEndPoint(w http.ResponseWriter, r *http.Re
 	StatusOK.Serve(map[string]string{"msg": "Success"})(w, r)
 }
 
+// decodeContact returns a contact from a json body
 func decodeContact(r *http.Request) (models.Contact, error) {
 	defer r.Body.Close()
 	var c models.Contact
@@ -179,6 +189,7 @@ func decodeContact(r *http.Request) (models.Contact, error) {
 	return c, err
 }
 
+// decodeContacts returns several contacts from a csv body
 func decodeContacts(r *http.Request) ([]models.Contact, error) {
 	defer r.Body.Close()
 	var c []models.Contact

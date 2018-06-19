@@ -7,6 +7,7 @@ import (
 	"github.com/icrowley/fake"
 )
 
+// FakeUsers generates count users
 func FakeUsers(count int) []models.User {
 	users := make([]models.User, count)
 	for i := 0; i < count; i++ {

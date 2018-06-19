@@ -10,6 +10,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// mongoContact is a mongodb specific implementaiton of the Contact struct
 type mongoContact struct {
 	ID        bson.ObjectId `bson:"_id" json:"id"`
 	FirstName string        `bson:"first_name" json:"first_name"`
@@ -18,9 +19,10 @@ type mongoContact struct {
 	Phone     string        `bson:"phone" json:"phone"`
 }
 
-func newMongoContact(c models.Contact, newId bool) *mongoContact {
+// newMOngoContact creates a new MongodbContact from a Contact
+func newMongoContact(c models.Contact, newID bool) *mongoContact {
 	id := bson.ObjectId(c.ID)
-	if newId {
+	if newID {
 		id = bson.NewObjectId()
 	}
 	return &mongoContact{
@@ -33,8 +35,10 @@ func newMongoContact(c models.Contact, newId bool) *mongoContact {
 
 }
 
+// mongoContacts is a utility type for slices of mongoContacts
 type mongoContacts []mongoContact
 
+// finds a contact in list by id
 func (contacts mongoContacts) findByID(id string) *mongoContact {
 	if !bson.IsObjectIdHex(id) {
 		return nil
@@ -47,6 +51,7 @@ func (contacts mongoContacts) findByID(id string) *mongoContact {
 	return nil
 }
 
+// replaces (used for updating) an element of the contact slice with another
 func (contacts mongoContacts) replaceWith(contact mongoContact) mongoContacts {
 	update := contacts
 	for i, c := range contacts {
@@ -60,6 +65,7 @@ func (contacts mongoContacts) replaceWith(contact mongoContact) mongoContacts {
 	return update
 }
 
+// removes an elment of the contact slice all together
 func (contacts mongoContacts) removeID(id string) mongoContacts {
 	update := contacts
 	for i, c := range contacts {
@@ -71,6 +77,7 @@ func (contacts mongoContacts) removeID(id string) mongoContacts {
 	return update
 }
 
+// converts to the Contact struct
 func (c *mongoContact) toModel() *models.Contact {
 	return &models.Contact{
 		ID:        c.ID.Hex(),
@@ -81,6 +88,7 @@ func (c *mongoContact) toModel() *models.Contact {
 	}
 }
 
+// mongoUser creates a mongodb specific User
 type mongoUser struct {
 	UserID   bson.ObjectId `bson:"_id,omitempty" json:"id"`
 	Username string        `bson:"username" json:"username"`
@@ -88,6 +96,7 @@ type mongoUser struct {
 	Contacts mongoContacts
 }
 
+// toModel transforms the mongo user to a User struct
 func (u *mongoUser) toModel() *models.User {
 	contacts := make([]models.Contact, len(u.Contacts))
 	for i, c := range u.Contacts {
@@ -101,6 +110,7 @@ func (u *mongoUser) toModel() *models.User {
 	}
 }
 
+// usernameIndex creates an index on the username field
 func usernameIndex() mgo.Index {
 	return mgo.Index{
 		Key:        []string{"username"},
@@ -111,6 +121,7 @@ func usernameIndex() mgo.Index {
 	}
 }
 
+// newMongoUser creates a new mongoUser
 func newMongoUser(u *models.User) *mongoUser {
 	return &mongoUser{
 		Username: u.Username,
@@ -118,11 +129,13 @@ func newMongoUser(u *models.User) *mongoUser {
 	}
 }
 
+// MongoUserStorage implements the UserStorage interface
 type MongoUserStorage struct {
 	collection *mgo.Collection
 	hash       common.Hash
 }
 
+// NewMongoUserStorage creates a new storage based of a session, database name, and collection name, as well as a password encoding hash
 func NewMongoUserStorage(session *MongoSession, dbName string, collectionName string, hash common.Hash) UserStorage {
 	collection := session.GetCollection(dbName, collectionName)
 	collection.EnsureIndex(usernameIndex())
@@ -132,6 +145,7 @@ func NewMongoUserStorage(session *MongoSession, dbName string, collectionName st
 	}
 }
 
+// Login logs in a user
 func (s *MongoUserStorage) Login(ctx context.Context, c models.Credentials) (*models.User, error) {
 	model := mongoUser{}
 	err := s.collection.Find(bson.M{"username": c.Username}).One(&model)
@@ -143,6 +157,7 @@ func (s *MongoUserStorage) Login(ctx context.Context, c models.Credentials) (*mo
 	return model.toModel(), nil
 }
 
+// FindAll finds all users
 func (s *MongoUserStorage) FindAll(ctx context.Context) ([]models.User, error) {
 	var mUsers []mongoUser
 	var users []models.User
@@ -153,12 +168,14 @@ func (s *MongoUserStorage) FindAll(ctx context.Context) ([]models.User, error) {
 	return users, err
 }
 
+// FindByUsername finds a user by username
 func (s *MongoUserStorage) FindByUsername(ctx context.Context, username string) (*models.User, error) {
 	var model mongoUser
 	err := s.collection.Find(bson.M{"username": username}).One(&model)
 	return model.toModel(), err
 }
 
+// Insert inserts a user into the db
 func (s *MongoUserStorage) Insert(ctx context.Context, user models.User) error {
 	u := newMongoUser(&user)
 	hashedPassword, err := s.hash.Generate(user.Password)
@@ -169,12 +186,14 @@ func (s *MongoUserStorage) Insert(ctx context.Context, user models.User) error {
 	return s.collection.Insert(u)
 }
 
+// Delete removes a user from the db
 func (s *MongoUserStorage) Delete(ctx context.Context, username string) error {
 	return s.collection.Remove(bson.M{"username": username})
 }
 
 // Contact methods
 
+// getUser gets a user from the databse. Utility function
 func (s *MongoUserStorage) getUser(ctx context.Context, username string) (*mongoUser, error) {
 	var user mongoUser
 	err := s.collection.Find(bson.M{"username": username}).One(&user)
@@ -184,6 +203,7 @@ func (s *MongoUserStorage) getUser(ctx context.Context, username string) (*mongo
 	return &user, nil
 }
 
+// CreateContact creates a new contact
 func (s *MongoUserStorage) CreateContact(ctx context.Context, username string, contact models.Contact) (*models.Contact, error) {
 	user, err := s.getUser(ctx, username)
 	if err != nil {
@@ -195,6 +215,7 @@ func (s *MongoUserStorage) CreateContact(ctx context.Context, username string, c
 	return newContact.toModel(), err
 }
 
+// FindContactById retrieves the specified contact
 func (s *MongoUserStorage) FindContactById(ctx context.Context, username string, contactID string) (*models.Contact, error) {
 	user, err := s.getUser(ctx, username)
 	if err != nil {
@@ -207,6 +228,7 @@ func (s *MongoUserStorage) FindContactById(ctx context.Context, username string,
 	return contact.toModel(), nil
 }
 
+// FindAllContacts finds all the contacts of a user
 func (s *MongoUserStorage) FindAllContacts(ctx context.Context, username string) ([]models.Contact, error) {
 	user, err := s.getUser(ctx, username)
 	if err != nil {
@@ -215,6 +237,7 @@ func (s *MongoUserStorage) FindAllContacts(ctx context.Context, username string)
 	return user.toModel().Contacts, nil
 }
 
+// UpdateContact updates a specific contact of a user
 func (s *MongoUserStorage) UpdateContact(ctx context.Context, username string, update models.Contact) error {
 	if !bson.IsObjectIdHex(update.ID) {
 		return fmt.Errorf("Invalid id")
@@ -231,6 +254,7 @@ func (s *MongoUserStorage) UpdateContact(ctx context.Context, username string, u
 	return err
 }
 
+// DeleteContact deletes the contact
 func (s *MongoUserStorage) DeleteContact(ctx context.Context, username string, contactID string) error {
 	user, err := s.getUser(ctx, username)
 	if err != nil {

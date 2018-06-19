@@ -8,20 +8,24 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+// JWTToken is a wrapper around an actual jwt. Useful object for serialization
 type JWTToken struct {
 	Token string `json:"token"`
 }
 
+// JWTCoder encodes an object into a jwy. Requires a secret
 type JWTCoder struct {
 	secret string
 }
 
+// NewJWTCoder creates a JWTCoder with the given secret for encryption
 func NewJWTCoder(secret string) *JWTCoder {
 	return &JWTCoder{
 		secret,
 	}
 }
 
+// Create encodes a Credential object into a JWTToken
 func (j *JWTCoder) Create(c models.Credentials) (JWTToken, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": c.Username,
@@ -31,6 +35,7 @@ func (j *JWTCoder) Create(c models.Credentials) (JWTToken, error) {
 	return JWTToken{tokenString}, err
 }
 
+// Decode decodes a jwt token into a Credentials object
 func (j *JWTCoder) Decode(str string) (*models.Credentials, error) {
 	token, err := jwt.Parse(str, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

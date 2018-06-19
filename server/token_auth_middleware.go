@@ -10,6 +10,8 @@ import (
 	"github.com/Dacode45/addressbook/storage"
 )
 
+// TokenAuthMiddleware is simple middleware to parse JWT from the authorization header
+// Expects the authorization: Bearer <token> format, but Bearer isn't required
 func (coder *JWTCoder) TokenAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authorizationHeader := r.Header.Get("authorization")
@@ -33,6 +35,7 @@ func (coder *JWTCoder) TokenAuthMiddleware(next http.HandlerFunc) http.HandlerFu
 	}
 }
 
+// LoggedInMiddleware logs the user in based of their jwt token
 func LoggedInMiddleware(jwtCoder *JWTCoder, userStorage storage.UserStorage, next http.HandlerFunc) http.HandlerFunc {
 	return jwtCoder.TokenAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

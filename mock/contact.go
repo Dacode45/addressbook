@@ -5,6 +5,7 @@ import (
 	"github.com/icrowley/fake"
 )
 
+// FakeContacts generates count contacts
 func FakeContacts(count int) []models.Contact {
 	contacts := make([]models.Contact, count)
 	for i := 0; i < count; i++ {

@@ -10,23 +10,26 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// userRouter handles the user routes
 type userRouter struct {
 	userStorage storage.UserStorage
 	jwtCoder    *JWTCoder
 }
 
+// NewUserRouter creates a new userRouter
 func NewUserRouter(u storage.UserStorage, config ServerConfig, router *mux.Router) *mux.Router {
 	jwtCoder := NewJWTCoder(config.JWTSecret)
 	userRouter := userRouter{u, jwtCoder}
 
-	router.HandleFunc("/", userRouter.createUserHandler).Methods("POST")
-	router.HandleFunc("/login", userRouter.loginHandler).Methods("POST")
-	router.HandleFunc("/me", LoggedInMiddleware(jwtCoder, u, userRouter.getLoggedInUser)).Methods("GET")
-	router.HandleFunc("/{username}", userRouter.getUserHandler).Methods("GET")
+	router.HandleFunc("/", userRouter.CreateUserHandler).Methods("POST")
+	router.HandleFunc("/login", userRouter.LoginHandler).Methods("POST")
+	router.HandleFunc("/me", LoggedInMiddleware(jwtCoder, u, userRouter.GetLoggedInUser)).Methods("GET")
+	router.HandleFunc("/{username}", userRouter.GetUserHandler).Methods("GET")
 	return router
 }
 
-func (ur *userRouter) createUserHandler(w http.ResponseWriter, r *http.Request) {
+// CreateUserHandler creates a user from a POST request
+func (ur *userRouter) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := decodeUser(r)
 	if err != nil {
 		StatusBadRequest.Serve(err)(w, r)
@@ -38,11 +41,13 @@ func (ur *userRouter) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		StatusInternalServerError.Serve(err)(w, r)
 		return
 	}
+	user.Password = ""
 
 	StatusOK.Serve(user)(w, r)
 }
 
-func (ur *userRouter) getUserHandler(w http.ResponseWriter, r *http.Request) {
+// GetUserHandler gets a
+func (ur *userRouter) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	username := vars["username"]
 
@@ -51,21 +56,25 @@ func (ur *userRouter) getUserHandler(w http.ResponseWriter, r *http.Request) {
 		StatusNotFound.Serve(err)(w, r)
 		return
 	}
+	user.Password = ""
 
 	StatusOK.Serve(user)(w, r)
 }
 
-func (ur *userRouter) getLoggedInUser(w http.ResponseWriter, r *http.Request) {
+// GetLoggedInUser retireves the currently logged in user
+func (ur *userRouter) GetLoggedInUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user, ok := ctx.Value(ContextUserKey).(*models.User)
 	if !ok || user == nil {
 		StatusUnauthorized.Serve(fmt.Errorf("authentication failed"))(w, r)
 		return
 	}
+	user.Password = ""
 	StatusOK.Serve(user)(w, r)
 }
 
-func (ur *userRouter) loginHandler(w http.ResponseWriter, r *http.Request) {
+// LoginHandler logs the user in and returns the JWT token for subsequent request
+func (ur *userRouter) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	credentials, err := decodeCredentials(r)
 	if err != nil {
 		StatusBadRequest.Serve(err)(w, r)
@@ -86,6 +95,7 @@ func (ur *userRouter) loginHandler(w http.ResponseWriter, r *http.Request) {
 	StatusOK.Serve(token)(w, r)
 }
 
+// decodeUser decodes a user from the json body
 func decodeUser(r *http.Request) (models.User, error) {
 	var u models.User
 	if r.Body == nil {
@@ -96,6 +106,7 @@ func decodeUser(r *http.Request) (models.User, error) {
 	return u, err
 }
 
+// decodeCredentials decodes a Credentials object from the json body
 func decodeCredentials(r *http.Request) (models.Credentials, error) {
 	var c models.Credentials
 	if r.Body == nil {

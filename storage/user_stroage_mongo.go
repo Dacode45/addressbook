@@ -135,7 +135,6 @@ func NewMongoUserStorage(session *MongoSession, dbName string, collectionName st
 func (s *MongoUserStorage) Login(ctx context.Context, c models.Credentials) (*models.User, error) {
 	model := mongoUser{}
 	err := s.collection.Find(bson.M{"username": c.Username}).One(&model)
-
 	err = s.hash.Compare(model.Password, c.Password)
 	if err != nil {
 		return nil, err
@@ -167,7 +166,7 @@ func (s *MongoUserStorage) Insert(ctx context.Context, user models.User) error {
 		return err
 	}
 	u.Password = hashedPassword
-	return s.collection.Insert(newMongoUser(&user))
+	return s.collection.Insert(u)
 }
 
 func (s *MongoUserStorage) Delete(ctx context.Context, username string) error {

@@ -12,11 +12,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/Dacode45/addressbook/crypto"
 	"github.com/Dacode45/addressbook/models"
 
 	"github.com/gorilla/mux"
 
-	"github.com/Dacode45/addressbook/mock"
 	"github.com/Dacode45/addressbook/server"
 	"github.com/Dacode45/addressbook/storage"
 )
@@ -124,7 +124,7 @@ func should_login_user(t *testing.T) {
 	req, _ := http.NewRequest("POST", "/login", bytes.NewBuffer(creds))
 	res := httptest.NewRecorder()
 	router.ServeHTTP(res, req)
-	assert.Equal(t, http.StatusOK, res.Code, "OK response is expected")
+	assert.NotEqual(t, http.StatusOK, res.Code, "OK response is not expected")
 
 	u, _ := json.Marshal(user)
 	req, _ = http.NewRequest("POST", "/", bytes.NewBuffer(u))
@@ -174,7 +174,7 @@ func newStorage() (*storage.MongoSession, storage.UserStorage) {
 		log.Fatalf("Unable to connect to mongo: %s", err)
 	}
 
-	mockHash := mock.Hash{}
+	mockHash := crypto.Hash{}
 	uStorage := storage.NewMongoUserStorage(session.Copy(), dbName, userCollectionName, &mockHash)
 	return session, uStorage
 }

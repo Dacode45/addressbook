@@ -7,4 +7,5 @@ import (
 var (
 	StatusCreated = JsonHandler(http.StatusCreated)
 	StatusOK      = JsonHandler(http.StatusOK)
+	StatusOKCSV   = CSVHandler(http.StatusOK)
 )

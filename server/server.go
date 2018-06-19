@@ -25,11 +25,9 @@ func NewServer(u storage.UserStorage, config ServerConfig) *Server {
 }
 
 // Start serves the server on port 8080
-func (s *Server) Start() {
+func (s *Server) Start() error {
 	log.Println("Listen on port 8080")
-	if err := http.ListenAndServe(":8080", handlers.LoggingHandler(os.Stdout, s.router)); err != nil {
-		log.Fatal("http.ListenAndServer: ", err)
-	}
+	return http.ListenAndServe(":8080", handlers.LoggingHandler(os.Stdout, s.router))
 }
 
 func (s *Server) newSubrouter(path string) *mux.Router {

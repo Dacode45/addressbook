@@ -17,7 +17,8 @@ type Server struct {
 
 func NewServer(u storage.UserStorage, config ServerConfig) *Server {
 	s := Server{router: mux.NewRouter(), config: config}
-	NewUserRouter(u, config, s.newSubrouter("/user"))
+	NewUserRouter(u, config, s.newSubrouter("/api/v1/users"))
+	NewContactRouter(u, config, s.newSubrouter("/api/v1/contacts"))
 	return &s
 }
 

@@ -57,7 +57,7 @@ func should_create_user(t *testing.T) {
 	router.ServeHTTP(res, req)
 	assert.Equal(t, http.StatusOK, res.Code, "OK response is expected")
 
-	var dbUser models.User
+	var dbUser *models.User
 	var err error
 	dbUser, err = uStorage.FindByUsername(context.Background(), user.Username)
 	t.Log(dbUser)
@@ -83,7 +83,7 @@ func should_retrieve_user(t *testing.T) {
 	res := httptest.NewRecorder()
 	router.ServeHTTP(res, req)
 
-	var dbUser models.User
+	var dbUser *models.User
 	var err error
 	dbUser, err = uStorage.FindByUsername(context.Background(), user.Username)
 	t.Log(dbUser)
@@ -131,7 +131,7 @@ func should_login_user(t *testing.T) {
 	res = httptest.NewRecorder()
 	router.ServeHTTP(res, req)
 
-	var dbUser models.User
+	var dbUser *models.User
 	var err error
 	dbUser, err = uStorage.FindByUsername(context.Background(), user.Username)
 	t.Log(dbUser)

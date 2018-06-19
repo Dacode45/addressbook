@@ -2,11 +2,8 @@ package storage_test
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"testing"
-
-	"github.com/icrowley/fake"
 
 	"github.com/Dacode45/addressbook/mock"
 	"github.com/Dacode45/addressbook/models"
@@ -71,7 +68,7 @@ func should_query_users(t *testing.T) {
 
 	numFake := 10
 
-	users := fakeUsers(numFake)
+	users := mock.FakeUsers(numFake)
 	ctx := context.Background()
 	for _, u := range users {
 		assert.NoError(t, uStorage.Insert(ctx, u), "Unable to create user")
@@ -112,8 +109,8 @@ func should_query_contacts(t *testing.T) {
 
 	numFake := 10
 
-	fakeUser := fakeUsers(1)[0]
-	fakeContacts := fakeContacts(numFake)
+	fakeUser := mock.FakeUsers(1)[0]
+	fakeContacts := mock.FakeContacts(numFake)
 
 	ctx := context.Background()
 
@@ -153,28 +150,4 @@ func should_query_contacts(t *testing.T) {
 	assert.NoError(t, err, "Failed to delete")
 	fakeContact, err = uStorage.FindContactById(ctx, fakeUser.UserID, fakeContact.ID)
 	assert.Error(t, err, "failed to delete contact")
-}
-
-func fakeContacts(count int) []models.Contact {
-	contacts := make([]models.Contact, count)
-	for i := 0; i < count; i++ {
-		contacts[i] = models.Contact{
-			FirstName: fake.FirstName(),
-			LastName:  fake.LastName(),
-			Email:     fake.EmailAddress(),
-			Phone:     fake.Phone(),
-		}
-	}
-	return contacts
-}
-
-func fakeUsers(count int) []models.User {
-	users := make([]models.User, count)
-	for i := 0; i < count; i++ {
-		users[i] = models.User{
-			Username: fmt.Sprintf("%s%d", fake.UserName(), i),
-			Password: fake.SimplePassword(),
-		}
-	}
-	return users
 }

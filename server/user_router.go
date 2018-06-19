@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Dacode45/addressbook/common"
 	"github.com/Dacode45/addressbook/models"
 	"github.com/Dacode45/addressbook/storage"
 	"github.com/gorilla/mux"
@@ -22,7 +21,7 @@ func NewUserRouter(u storage.UserStorage, config ServerConfig, router *mux.Route
 
 	router.HandleFunc("/", userRouter.createUserHandler).Methods("POST")
 	router.HandleFunc("/login", userRouter.loginHandler).Methods("POST")
-	router.HandleFunc("/me", jwtCoder.TokenAuthMiddleware(userRouter.getLoggedInUser)).Methods("GET")
+	router.HandleFunc("/me", LoggedInMiddleware(jwtCoder, u, userRouter.getLoggedInUser)).Methods("GET")
 	router.HandleFunc("/{username}", userRouter.getUserHandler).Methods("GET")
 	return router
 }
@@ -58,14 +57,9 @@ func (ur *userRouter) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func (ur *userRouter) getLoggedInUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	creds, ok := ctx.Value(common.ContextCredentialsKey).(*models.Credentials)
-	if !ok || creds == nil {
-		StatusUnauthorized.Serve(fmt.Errorf("no jwt passed"))(w, r)
-		return
-	}
-	user, err := ur.userStorage.Login(r.Context(), *creds)
-	if err != nil {
-		StatusUnauthorized.Serve(fmt.Errorf("not logged in"))(w, r)
+	user, ok := ctx.Value(ContextUserKey).(*models.User)
+	if !ok || user == nil {
+		StatusUnauthorized.Serve(fmt.Errorf("authentication failed"))(w, r)
 		return
 	}
 	StatusOK.Serve(user)(w, r)

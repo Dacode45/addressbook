@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Dacode45/addressbook/common"
+	"github.com/Dacode45/addressbook/models"
+	"github.com/Dacode45/addressbook/storage"
 )
 
 func (coder *JWTCoder) TokenAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
@@ -26,8 +27,27 @@ func (coder *JWTCoder) TokenAuthMiddleware(next http.HandlerFunc) http.HandlerFu
 			StatusInternalServerError.Serve(err)(w, r)
 			return
 		}
-		ctx := context.WithValue(r.Context(), common.ContextCredentialsKey, creds)
+		ctx := context.WithValue(r.Context(), ContextCredentialsKey, creds)
 		r = r.WithContext(ctx)
 		next(w, r)
 	}
+}
+
+func LoggedInMiddleware(jwtCoder *JWTCoder, userStorage storage.UserStorage, next http.HandlerFunc) http.HandlerFunc {
+	return jwtCoder.TokenAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		creds, ok := ctx.Value(ContextCredentialsKey).(*models.Credentials)
+		if !ok || creds == nil {
+			StatusUnauthorized.Serve(fmt.Errorf("no jwt passed"))(w, r)
+			return
+		}
+		user, err := userStorage.Login(r.Context(), *creds)
+		if err != nil {
+			StatusUnauthorized.Serve(err)(w, r)
+			return
+		}
+		ctx = context.WithValue(ctx, ContextUserKey, user)
+		r = r.WithContext(ctx)
+		next(w, r)
+	})
 }
